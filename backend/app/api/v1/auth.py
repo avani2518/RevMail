@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.database.database import get_db
 from app.schemas.user_schema import UserRegister, UserResponse
+from app.schemas.token_schema import UserLogin, Token
 from app.services.auth_service import AuthService
 
 router = APIRouter(
@@ -20,7 +21,15 @@ def register(
     user: UserRegister,
     db: Session = Depends(get_db)
 ):
-    """
-    Register a new user.
-    """
     return AuthService.register(db, user)
+
+
+@router.post(
+    "/login",
+    response_model=Token
+)
+def login(
+    user: UserLogin,
+    db: Session = Depends(get_db)
+):
+    return AuthService.login(db, user)

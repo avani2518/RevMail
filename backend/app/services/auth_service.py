@@ -1,8 +1,10 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
-from app.core.security import hash_password
+from app.core.jwt import create_access_token
+from app.core.security import hash_password, verify_password
 from app.repositories.user_repository import UserRepository
+from app.schemas.token_schema import UserLogin
 from app.schemas.user_schema import UserRegister
 
 
@@ -17,7 +19,6 @@ class AuthService:
         Register a new user.
         """
 
-        # Check if email already exists
         existing_user = UserRepository.get_by_email(
             db,
             user.email
@@ -29,10 +30,8 @@ class AuthService:
                 detail="Email already registered."
             )
 
-        # Hash the password
         password_hash = hash_password(user.password)
 
-        # Save user
         new_user = UserRepository.create(
             db=db,
             username=user.username,
@@ -41,3 +40,41 @@ class AuthService:
         )
 
         return new_user
+
+    @staticmethod
+    def login(db: Session, user: UserLogin):
+        """
+        Authenticate a user and return a JWT access token.
+        """
+
+        existing_user = UserRepository.get_by_email(
+            db,
+            user.email
+        )
+
+        if not existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid email or password."
+            )
+
+        if not verify_password(
+            user.password,
+            existing_user.password_hash
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid email or password."
+            )
+
+        access_token = create_access_token(
+            data={
+                "sub": str(existing_user.id),
+                "email": existing_user.email
+            }
+        )
+
+        return {
+            "access_token": access_token,
+            "token_type": "bearer"
+        }

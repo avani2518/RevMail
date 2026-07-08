@@ -9,9 +9,12 @@ class UserRepository:
     """
 
     @staticmethod
-    def get_by_email(db: Session, email: str):
+    def get_by_email(
+        db: Session,
+        email: str,
+    ) -> User | None:
         """
-        Return a user if the email already exists.
+        Return a user by email.
         """
         return (
             db.query(User)
@@ -25,11 +28,10 @@ class UserRepository:
         username: str,
         email: str,
         password_hash: str,
-    ):
+    ) -> User:
         """
-        Create and save a new user.
+        Create a new user.
         """
-
         user = User(
             username=username,
             email=email,
@@ -41,3 +43,17 @@ class UserRepository:
         db.refresh(user)
 
         return user
+
+    @staticmethod
+    def get_by_id(
+        db: Session,
+        user_id,
+    ) -> User | None:
+        """
+        Return a user by ID.
+        """
+        return (
+            db.query(User)
+            .filter(User.id == user_id)
+            .first()
+        )
